@@ -1,11 +1,11 @@
 /*******************************************************************
-**File Name: gardenlighthw.h                                     **
-**Library Name: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.          **
-**Original Project Name: Null.                                    **
+**File Name: gardenlighthw.h                                      **
+**Library Name: GardenlightHW.                                    **
+**Original Project Name: Garden Light Software.                   **
 **Author Name: Jeremiah A.                                        **
-**Version No:  2.0                                                **
+**Version No:  1.0                                                **
 **Date Created: 13th March 2024.                                  **
-**Last Edited: 29th August 2020.                                  **
+**Last Edited: 22nd March 2024.                                   **
 ********************************************************************/
 
 #ifndef GARDENLIGHTHW_H
@@ -22,7 +22,7 @@ extern "C" {
 
 #define RELAY_ON		1
 #define RELAY_OFF		0
-#define DEBUG			1
+#define DEBUG			0
 #define APP_START       0
 #define SYSTEM_INFO		1
 #define TEST_PARAM		0

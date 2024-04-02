@@ -1,6 +1,5 @@
 /*******************************************************************
 **File Name: main.c                                               **
-**Library Name: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.          **
 **Original Project Name: Garden Light Software.                   **
 **Author Name: Jeremiah A.                                        **
 **Version No:  1.0                                                **
@@ -44,7 +43,7 @@
   uint8_t currManualSwState = 0;
   uint8_t manualSwReading = 0;
   uint8_t manualTimeoutFlag = 0;
-  uint16_t manualDelayTime = 10000;
+  uint16_t manualDelayTime = 3000;
   uint8_t manualActiveFlag = 0;
 
   uint8_t currManualTestState = 1;
@@ -105,7 +104,9 @@
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+  #if DEBUG
   delay(10000);
+  #endif
   while(esp_sleep_enable_ext0_wakeup(GPIO_NUM_26, 0) != ESP_OK);
   Serial.println("Welcome, Starting Garden Light Control!!!");
   manualModeLamp.Activate();
@@ -113,7 +114,9 @@ void setup() {
   motionModeLamp1.Activate();
   motionSenseLamp.Activate();
   remoteSenseLamp.Activate();
+  #if DEBUG
   delay(10000);
+  #endif
    manualModeLamp.Deactivate();
   wifiConnectLamp.Deactivate();
   motionModeLamp1.Deactivate();
@@ -257,9 +260,19 @@ void ManualStateLogic(void)
   // is off/Low (0)
   else if (!(currManualSwState) || currManualTestState)
   {
-    if(prevManualTestState != currManualTestState)
+    if(!motionLightActiveFlag)
     {
-      if(currManualTestState)
+      if(prevManualTestState != currManualTestState)
+      {
+        if(currManualTestState)
+        {
+          manualModeLamp.Deactivate();
+          gardenLight.TurnOff();
+          manualActiveFlag = 0;
+          manualTimeoutFlag = 0;
+        }
+      }
+      else if(!currManualSwState)
       {
         manualModeLamp.Deactivate();
         gardenLight.TurnOff();
@@ -267,14 +280,6 @@ void ManualStateLogic(void)
         manualTimeoutFlag = 0;
       }
     }
-    else if(!currManualSwState)
-    {
-      manualModeLamp.Deactivate();
-      gardenLight.TurnOff();
-      manualActiveFlag = 0;
-      manualTimeoutFlag = 0;
-    }
-    
   }
 }
 
@@ -303,7 +308,7 @@ void MotionStateLogic(void)
     //when PIR sensor no longer detects motion and 
     // motion light active flag is set, then set
     // countdown timedown timer to switch off
-    else if(!currPirSenseState && motionLightActiveFlag)
+    else if((!(currPirSenseState)|| currMockSenseState) && motionLightActiveFlag)
     {
       if(!timeDelayStartFlag)
       {
