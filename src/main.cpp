@@ -13,10 +13,17 @@
 #include <WiFi.h>
 
 // TODO: Configure your WiFi here
-//#define WIFI_SSID "VM1628887"
-//#define WIFI_PSK  "jeojc7gwbnPkvzcg"
-#define WIFI_SSID "Freeloadersunited"
-#define WIFI_PSK  "klak8385"
+#define TEST_WIFI 0
+
+#if TEST_WIFI
+  #define WIFI_SSID "Freeloadersunited"
+  #define WIFI_PSK  "klak8385"
+
+#else
+  #define WIFI_SSID "VM1628887"
+  #define WIFI_PSK  "jeojc7gwbnPkvzcg"
+#endif
+#define WIFI_INIT_CONNECT_TIMEOUT 6   // 3 Seconds 500ms x6
 
 /** Check if we have multiple cores */
 #if CONFIG_FREERTOS_UNICORE
@@ -50,7 +57,7 @@ using namespace httpsserver;
 #define LIGHT_DEBOUNCE_DELAY    100   // 100 mS
 #define PIR_SENSE_DEBOUNCE      25    //25 mS
 #define LOOP_DEBUG_DELAY        3000  // 6 Seconds
-#define TEST_MANUAL_DELAY       1     // is high when test manual state is active
+#define TEST_MANUAL_DELAY       0     // is high when test manual state is active
 
 #define SIMPLE_HTTP_SERVER      1   //simple http server active if 1
 
@@ -82,7 +89,7 @@ using namespace httpsserver;
   #if TEST_MANUAL_DELAY
     uint32_t manualDelayTime = 3000;    // 3 seconds delay
   #else
-    uint32_t manualDelayTime = 300000;  // 5 minutes delay
+    uint32_t manualDelayTime = 480000;  // 8 minutes delay
   #endif
   uint8_t manualActiveFlag = 0;
 
@@ -118,6 +125,7 @@ using namespace httpsserver;
   unsigned long previousReconMillis = 0;
   unsigned long currReconMillis = 0;
   unsigned long reconDelay = 10000;
+  uint8_t  initWifiConnectFlag = 0;
 
 // Variable to store the HTTP request
   String header;
@@ -209,19 +217,30 @@ void setup() {
   lightSenseState = lightSensor.GetSignal();
 
   // Connect to Wi-Fi network with SSID and password
+  uint8_t wifiConnectCount = 0;
   Serial.print("Connecting to ");
   Serial.println(WIFI_SSID);
   #if !DEBUG
     WiFi.begin(WIFI_SSID, WIFI_PSK);
+  
     while (WiFi.status() != WL_CONNECTED) {
       delay(500);
+      wifiConnectCount++;
       Serial.print(".");
+      if(wifiConnectCount > WIFI_INIT_CONNECT_TIMEOUT)
+      {
+        break;
+      }
     }
     // Print local IP address and start web server
-    Serial.println("");
-    Serial.println("WiFi connected.");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
+    if(WiFi.status() == WL_CONNECTED)
+    {
+      Serial.println("");
+      Serial.println("WiFi connected.");
+      Serial.println("IP address: ");
+      Serial.println(WiFi.localIP());
+      initWifiConnectFlag = 1;
+    }
     server.begin();
     xTaskCreatePinnedToCore(WebServerTask, "http80", 3000, NULL, 1, &wifiTaskHandle, TASK_CORE);
    #endif
@@ -577,6 +596,14 @@ void WebServerTask(void* params)
     }
     else{
       wifiConnectLamp.Activate();
+      if(!initWifiConnectFlag)
+      {
+        Serial.println("");
+        Serial.println("WiFi connected.");
+        Serial.println("IP address: ");
+        Serial.println(WiFi.localIP());
+        initWifiConnectFlag = 1;
+      }
     }
     if((WiFi.status() != WL_CONNECTED) && (currReconMillis - previousReconMillis >= reconDelay))
     {
